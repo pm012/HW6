@@ -83,7 +83,7 @@ def handle_folder(folder_path:str):
     file_extension_upper = None    
     global files_by_category
 
-    for path in Path(folder_path).rglob('*'):
+    for path in Path(folder_path).iterdir(): #iternate through the foulders using path.iterdir() call
         if path.is_file():
             #get fle extension
             _, file_extension = os.path.splitext(path)            
@@ -123,8 +123,7 @@ def handle_folder(folder_path:str):
                 unknown_extensions.add(file_extension_upper)
                 shutil.move(str(path), str(unknown_category_path / normalize(path.name)))
 
-        #call the function recursively (actually this is not a classic recursion as the function has other output by requirements)
-        # .rglob makes  it possible to handle directories using such call as it returns proper recursive generator 
+        #call the function recursively (actually this is not a classic recursion as the function has other output by requirements)        
         else:
             
             if not(path.name in EXTENSIONS and root_path == str(path.parent)) and str(root_path) + "/" + "archives" != str(path.parent):
@@ -142,7 +141,7 @@ if __name__ == "__main__":
     except Exception:
          print("Please eneter a directory to sort aa commandline parameter")
          exit()
-    #root_path = "/home/devel/Videos"
+#    root_path = "/home/devel/Videos"
     result = handle_folder(root_path)
     print("Known Extensions:", result[0])
     print("Unknown Extensions:", result[1])
