@@ -45,10 +45,10 @@ from pathlib import Path
 
 EXTENSIONS = {
     "images": [".JPG", ".JPEG", ".PNG", ".SVG"],
-    "videos": [".MP4", ".AVI", ".MKV", ".MOV"],
+    "video": [".MP4", ".AVI", ".MKV", ".MOV"],
     "documents": [".DOCX", ".PDF", ".XLSX", ".PPTX", ".TXT", ".DOC"],
-    "music": ['.MP3', '.OGG', '.WAV', '.AMR'],
-    "archives": ['.ZIP', '.TAR', '.GZ'],
+    "audio": ['.MP3', '.OGG', '.WAV', '.AMR'],
+    "archives": ['.ZIP', '.TAR', '.GZ'],    
 }
 
 # to get handled files by category
@@ -59,7 +59,11 @@ def normalize(file_name: str) -> str:
     CYRILLIC_SYMBOLS = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяєіїґ"
     TRANSLATION = ("a", "b", "v", "g", "d", "e", "e", "j", "z", "i", "j", "k", "l", "m", "n", "o", "p", "r", "s", "t", "u",
                    "f", "h", "ts", "ch", "sh", "sch", "", "y", "", "e", "yu", "ya", "je", "i", "ji", "g")
-    TRANS = {ord(c): l for c, l in zip(CYRILLIC_SYMBOLS, TRANSLATION)}
+    TRANS ={}
+
+    for c, l in zip(CYRILLIC_SYMBOLS, TRANSLATION):
+        TRANS[ord(c)] = l
+        TRANS[ord(c.upper())] = l.upper()
 
     res = re.sub(r"(?u)[^\w.]", "_", file_name.translate(TRANS))
     return res
@@ -86,6 +90,7 @@ def handle_folder(folder_path:str):
             file_extension_upper = file_extension.upper()
             # get accoridng category
             category = get_category(file_extension_upper)
+            
 
             if category != "unknown":
                 category_path = Path(root_path) / category
@@ -111,17 +116,22 @@ def handle_folder(folder_path:str):
                     shutil.move(str(path), str(category_path / normalize(path.name)))
 
             #create list of unknown extensions that are present in the folder specified as input function parameter
+            #move files with unknown extension category to devoted folder
             elif category == "unknown":
+                unknown_category_path = Path(root_path) / category
+                unknown_category_path.mkdir(parents=True, exist_ok=True)
                 unknown_extensions.add(file_extension_upper)
+                shutil.move(str(path), str(unknown_category_path / normalize(path.name)))
 
         #call the function recursively (actually this is not a classic recursion as the function has other output by requirements)
         # .rglob makes  it possible to handle directories using such call as it returns proper recursive generator 
-        elif path.is_dir() and path.name not in EXTENSIONS and str(root_path) + "/" + "archives" not in path.parents:
-            handle_folder(path)
-
-        elif path.is_dir() and not any(path.iterdir()):
-            path.rmdir()
+        else:
             
+            if not(path.name in EXTENSIONS and root_path == str(path.parent)) and str(root_path) + "/" + "archives" != str(path.parent):
+                handle_folder(path)
+            
+            if not any(path.iterdir()):
+                path.rmdir()
 
     return known_extensions, unknown_extensions, files_by_category
 
@@ -130,9 +140,9 @@ if __name__ == "__main__":
     try:
         root_path = sys.argv[1]
     except Exception:
-        print("Please eneter a directory to sort aa commandline parameter")
-        exit()
-    #root_path = "/home/.../Videos"
+         print("Please eneter a directory to sort aa commandline parameter")
+         exit()
+    #root_path = "/home/devel/Videos"
     result = handle_folder(root_path)
     print("Known Extensions:", result[0])
     print("Unknown Extensions:", result[1])
